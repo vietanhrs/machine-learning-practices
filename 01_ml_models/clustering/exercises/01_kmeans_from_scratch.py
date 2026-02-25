@@ -18,6 +18,8 @@ Instructions:
     - Run the script and verify that your clusters look sensible on the plot.
 """
 
+import math
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_blobs
@@ -48,8 +50,7 @@ def euclidean_distance(a: np.ndarray, b: np.ndarray) -> float:
         - Return the square root of the sum.
         Hint: np.sqrt and np.sum are your friends.
     """
-    # TODO: implement Euclidean distance
-    raise NotImplementedError("Implement euclidean_distance()")
+    return math.sqrt(sum([(a[i] - b[i]) ** 2 for i in range(0, len(a))]))
 
 
 # ---------------------------------------------------------------------------
@@ -76,8 +77,8 @@ def initialize_centroids(X: np.ndarray, k: int) -> np.ndarray:
         - Return those rows of X.
         Hint: You want k unique rows from X.
     """
-    # TODO: randomly sample k rows from X (no replacement)
-    raise NotImplementedError("Implement initialize_centroids()")
+    choices = np.random.choice(len(X), k, replace=False)
+    return X[choices]
 
 
 # ---------------------------------------------------------------------------
@@ -106,8 +107,9 @@ def assign_clusters(X: np.ndarray, centroids: np.ndarray) -> np.ndarray:
               with keepdims / broadcasting for a vectorised approach.
               np.argmin is useful for picking the nearest centroid.
     """
-    # TODO: compute distances from each point to each centroid and assign labels
-    raise NotImplementedError("Implement assign_clusters()")
+    return np.array([np.argmin(
+        np.array([euclidean_distance(x, centroid) for centroid in centroids])
+    ) for x in X])
 
 
 # ---------------------------------------------------------------------------
@@ -136,8 +138,14 @@ def update_centroids(X: np.ndarray, labels: np.ndarray, k: int) -> np.ndarray:
         - Handle the edge case where a cluster has no assigned points
           (re-initialize that centroid randomly from X to avoid NaN).
     """
-    # TODO: compute new centroids as the mean position of each cluster
-    raise NotImplementedError("Implement update_centroids()")
+    new_centroids = []
+    for i in range(k):
+        cluster_points = X[labels == i]
+        if len(cluster_points) == 0:
+            new_centroids.append(X[np.random.choice(len(X))])
+        else:
+            new_centroids.append(np.mean(cluster_points, axis=0))
+    return np.array(new_centroids)
 
 
 # ---------------------------------------------------------------------------
@@ -176,8 +184,15 @@ def kmeans(
               then np.max across all rows.
         3. Return the final labels and centroids.
     """
-    # TODO: orchestrate the full K-Means loop
-    raise NotImplementedError("Implement kmeans()")
+    centroids = initialize_centroids(X, k)
+    for _ in range(max_iters):
+        labels = assign_clusters(X, centroids)
+        new_centroids = update_centroids(X, labels, k)
+        shift = np.max([np.linalg.norm(new_centroids[i] - centroids[i]) for i in range(k)])
+        centroids = new_centroids
+        if shift < tol:
+            break
+    return labels, centroids
 
 
 # ---------------------------------------------------------------------------
@@ -255,9 +270,8 @@ def main() -> None:
 
     print(f"Cluster sizes: {dict(zip(*np.unique(labels, return_counts=True)))}")
 
-    # TODO: compute and print the inertia
-    # inertia = ...
-    # print(f"Inertia (WCSS): {inertia:.4f}")
+    inertia = sum(euclidean_distance(X[i], centroids[labels[i]]) ** 2 for i in range(len(X)))
+    print(f"Inertia (WCSS): {inertia:.4f}")
 
     plot_clusters(X, labels, centroids)
 
